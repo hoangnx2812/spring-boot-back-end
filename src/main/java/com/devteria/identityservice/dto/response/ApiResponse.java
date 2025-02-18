@@ -2,11 +2,13 @@ package com.devteria.identityservice.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

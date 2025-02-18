@@ -2,9 +2,11 @@ package com.devteria.identityservice.service;
 
 import com.devteria.identityservice.dto.request.UserCreateReq;
 import com.devteria.identityservice.dto.request.UserUpdateReq;
+import com.devteria.identityservice.dto.response.UserResponse;
 import com.devteria.identityservice.entity.User;
 import com.devteria.identityservice.exception.AppException;
 import com.devteria.identityservice.exception.ErrorCode;
+import com.devteria.identityservice.mapper.UserMapper;
 import com.devteria.identityservice.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.List;
 public class UserService {
 
     UserRepository userRepository;
+    UserMapper userMapper;
 
     public List<User> getAll() {
         return userRepository.findAll();
@@ -28,13 +31,7 @@ public class UserService {
         if (userRepository.existsByUsername(userCreateRequest.getUsername())) {
             throw new AppException(ErrorCode.USER_EXISTS);
         }
-        User user = User.builder()
-                .username(userCreateRequest.getUsername())
-                .password(userCreateRequest.getPassword())
-                .firstName(userCreateRequest.getFirstName())
-                .lastName(userCreateRequest.getLastName())
-                .dateOfBirth(userCreateRequest.getDateOfBirth())
-                .build();
+        User user = userMapper.addUser(userCreateRequest);
         userRepository.save(user);
     }
 
@@ -43,15 +40,19 @@ public class UserService {
     }
 
     public void updateUser(UserUpdateReq userUpdateRequest) {
-        User user = userRepository.findById(userUpdateRequest.getId())
-                .map(o -> {
-                    o.setFirstName(userUpdateRequest.getFirstName());
-                    o.setLastName(userUpdateRequest.getLastName());
-                    o.setDateOfBirth(userUpdateRequest.getDob());
-                    return o;
-                })
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = findById(userUpdateRequest.getId());
+        userMapper.updateUser(user, userUpdateRequest);
         userRepository.save(user);
+    }
+
+
+    public User findById(String id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    public UserResponse findByIdResponse(String id) {
+        return userMapper.userToUserResponse(findById(id));
     }
 
 
