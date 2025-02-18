@@ -3,6 +3,8 @@ package com.devteria.identityservice.service;
 import com.devteria.identityservice.dto.request.UserCreateReq;
 import com.devteria.identityservice.dto.request.UserUpdateReq;
 import com.devteria.identityservice.entity.User;
+import com.devteria.identityservice.exception.AppException;
+import com.devteria.identityservice.exception.ErrorCode;
 import com.devteria.identityservice.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +18,16 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserService {
 
-   UserRepository userRepository;
+    UserRepository userRepository;
 
     public List<User> getAll() {
         return userRepository.findAll();
     }
 
     public void createUser(UserCreateReq userCreateRequest) {
+        if (userRepository.existsByUsername(userCreateRequest.getUsername())) {
+            throw new AppException(ErrorCode.USER_EXISTS);
+        }
         User user = User.builder()
                 .username(userCreateRequest.getUsername())
                 .password(userCreateRequest.getPassword())

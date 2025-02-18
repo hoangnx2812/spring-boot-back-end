@@ -12,12 +12,16 @@ import java.time.LocalDate;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserCreateReq {
-    @Size(min = 4, message = "USERNAME_INVALID")
+
+    @Size(min = 4, message = "User name must be at least 4 characters")
     String username;
-    @Size(min = 6, message = "INVALID_PASSWORD")
+
+    @Size(min = 6, message = "Password must be at least 6 characters")
     String password;
 
     String firstName;
+
     String lastName;
+
     LocalDate dateOfBirth;
 }
