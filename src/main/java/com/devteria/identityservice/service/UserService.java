@@ -11,6 +11,8 @@ import com.devteria.identityservice.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +24,7 @@ public class UserService {
 
     UserRepository userRepository;
     UserMapper userMapper;
+    PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
 
     public List<User> getAll() {
         return userRepository.findAll();
@@ -32,6 +35,7 @@ public class UserService {
             throw new AppException(ErrorCode.USER_EXISTS);
         }
         User user = userMapper.addUser(userCreateRequest);
+        user.setPassword(passwordEncoder.encode(userCreateRequest.getPassword()));
         userRepository.save(user);
     }
 

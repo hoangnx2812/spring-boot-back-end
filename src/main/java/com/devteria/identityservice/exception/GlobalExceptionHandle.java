@@ -12,14 +12,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ControllerAdvice
 public class GlobalExceptionHandle {
 
-    //Bắt lỗi chưa xác định
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<?>> handleRuntimeException(RuntimeException ex) {
-        return ResponseEntity.badRequest().body(ApiResponse.builder()
-                .code(ErrorCode.UNCATEGORIZED.getCode())
-                .message(ErrorCode.UNCATEGORIZED.getMessage())
-                .build());
-    }
 
     //Bắt lỗi khi validate dữ liệu
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -39,4 +31,13 @@ public class GlobalExceptionHandle {
                 .message(ex.getErrorCode().getMessage())
                 .build());
     }
+
+    //Bắt lỗi chưa xác định
+//    @ExceptionHandler(RuntimeException.class)
+//    public ResponseEntity<ApiResponse<?>> handleRuntimeException(RuntimeException ex) {
+//        return ResponseEntity.badRequest().body(ApiResponse.builder()
+//                .code(ErrorCode.UNCATEGORIZED.getCode())
+//                .message(ErrorCode.UNCATEGORIZED.getMessage())
+//                .build());
+//    }
 }
