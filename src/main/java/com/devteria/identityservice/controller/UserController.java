@@ -4,14 +4,12 @@ import com.devteria.identityservice.dto.request.UserCreateReq;
 import com.devteria.identityservice.dto.request.UserUpdateReq;
 import com.devteria.identityservice.dto.response.ApiResponse;
 import com.devteria.identityservice.service.UserService;
-import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
@@ -42,9 +40,6 @@ public class UserController {
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<ApiResponse<?>> deleteUser(@PathVariable String id) {
-        var authUser = SecurityContextHolder.getContext().getAuthentication();
-        log.info("username: {}", authUser.getName());
-        authUser.getAuthorities().forEach(o -> log.info("role: {}", o.getAuthority()));
         userService.deleteUser(id);
         return ResponseEntity.ok(ApiResponse.builder()
                 .code(200)
@@ -66,6 +61,14 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.builder()
                 .code(200)
                 .data(userService.findByIdResponse(id))
+                .build());
+    }
+
+    @GetMapping("/get-info")
+    public ResponseEntity<ApiResponse<?>> getInfo() {
+        return ResponseEntity.ok(ApiResponse.builder()
+                .code(200)
+                .data(userService.getInfo())
                 .build());
     }
 
