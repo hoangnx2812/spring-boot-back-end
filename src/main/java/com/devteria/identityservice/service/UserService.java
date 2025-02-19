@@ -48,7 +48,7 @@ public class UserService {
         userRepository.save(user);
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public void deleteUser(String id) {
         userRepository.deleteById(id);
     }

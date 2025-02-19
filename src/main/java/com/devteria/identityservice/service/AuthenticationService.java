@@ -46,14 +46,14 @@ public class AuthenticationService {
     public AuthenticationResponse authenticate(AuthenticationReq authenticationReq) {
         var user = userRepository.findByUsername(authenticationReq.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
-        boolean pass = passwordEncoder.matches(authenticationReq.getPassword(), user.getPassword());
-        if (!pass) {
+        boolean authenticated = passwordEncoder.matches(authenticationReq.getPassword(), user.getPassword());
+        if (!authenticated) {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
-        } else {
-            return AuthenticationResponse.builder()
-                    .token(generateToken(user))
-                    .build();
         }
+        return AuthenticationResponse.builder()
+                .token(generateToken(user))
+                .build();
+
     }
 
     // Kiểm tra xem token còn hiệu lực không
@@ -87,7 +87,7 @@ public class AuthenticationService {
         }
     }
 
-    private String buildScope(User user){
+    private String buildScope(User user) {
         StringJoiner joiner = new StringJoiner(" ");
         if (!CollectionUtils.isEmpty(user.getRoles())) {
             user.getRoles().forEach(joiner::add);
