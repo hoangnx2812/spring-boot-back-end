@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -34,4 +35,7 @@ public class User {
 
     @Column(name = "last_name")
     String lastName;
+
+    Set<String> roles;
+
 }

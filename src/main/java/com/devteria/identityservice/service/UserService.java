@@ -1,5 +1,6 @@
 package com.devteria.identityservice.service;
 
+import com.devteria.identityservice.constant.Role;
 import com.devteria.identityservice.dto.request.UserCreateReq;
 import com.devteria.identityservice.dto.request.UserUpdateReq;
 import com.devteria.identityservice.dto.response.UserResponse;
@@ -11,11 +12,12 @@ import com.devteria.identityservice.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +26,7 @@ public class UserService {
 
     UserRepository userRepository;
     UserMapper userMapper;
-    PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+    PasswordEncoder passwordEncoder;
 
     public List<User> getAll() {
         return userRepository.findAll();
@@ -36,6 +38,7 @@ public class UserService {
         }
         User user = userMapper.addUser(userCreateRequest);
         user.setPassword(passwordEncoder.encode(userCreateRequest.getPassword()));
+        user.setRoles(Set.of(Role.USER.name()));
         userRepository.save(user);
     }
 

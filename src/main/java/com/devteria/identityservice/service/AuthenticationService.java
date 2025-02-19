@@ -4,6 +4,7 @@ import com.devteria.identityservice.dto.request.AuthenticationReq;
 import com.devteria.identityservice.dto.request.IntrospectReq;
 import com.devteria.identityservice.dto.response.AuthenticationResponse;
 import com.devteria.identityservice.dto.response.IntrospectResponse;
+import com.devteria.identityservice.entity.User;
 import com.devteria.identityservice.exception.AppException;
 import com.devteria.identityservice.exception.ErrorCode;
 import com.devteria.identityservice.repository.UserRepository;
@@ -18,14 +19,15 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.StringJoiner;
 import java.util.UUID;
 
 @Slf4j
@@ -39,7 +41,7 @@ public class AuthenticationService {
     String SIGNER_KEY;
 
     UserRepository userRepository;
-    PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    PasswordEncoder passwordEncoder;
 
     public AuthenticationResponse authenticate(AuthenticationReq authenticationReq) {
         var user = userRepository.findByUsername(authenticationReq.getUsername())
@@ -49,7 +51,7 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         } else {
             return AuthenticationResponse.builder()
-                    .token(generateToken(user.getUsername()))
+                    .token(generateToken(user))
                     .build();
         }
     }
@@ -64,15 +66,15 @@ public class AuthenticationService {
         return IntrospectResponse.builder().valid(verified && expirationTime.after(new Date())).build();
     }
 
-    private String generateToken(String username) {
+    private String generateToken(User user) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512); // tạo header, chứa thuật toán
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder() // tạo claims, nội dung
-                .subject(username)
+                .subject(user.getUsername())
                 .issuer("hoangnx2812") // được phát hành từ ai
                 .issueTime(new Date()) // thời gian phát hành
                 .expirationTime(new Date(Instant.now().plus(1, ChronoUnit.DAYS).toEpochMilli())) // thời gian hết hạn
                 .jwtID(UUID.randomUUID().toString()) // id của token
-                .claim("role", "USER") // thêm claim
+                .claim("scope", buildScope(user)) // thêm claim
                 .build();
         Payload payload = new Payload(jwtClaimsSet.toJSONObject()); // tạo payload thông qua dữ liệu của claims
         JWSObject jwsObject = new JWSObject(jwsHeader, payload); // tạo token
@@ -83,5 +85,13 @@ public class AuthenticationService {
             log.error("Error signing token", e);
             throw new RuntimeException(e);
         }
+    }
+
+    private String buildScope(User user){
+        StringJoiner joiner = new StringJoiner(" ");
+        if (!CollectionUtils.isEmpty(user.getRoles())) {
+            user.getRoles().forEach(joiner::add);
+        }
+        return joiner.toString();
     }
 }

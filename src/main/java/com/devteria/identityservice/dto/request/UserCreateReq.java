@@ -27,6 +27,5 @@ public class UserCreateReq {
     @NotBlank(message = "Last name is required")
     String lastName;
 
-
     LocalDate dateOfBirth;
 }
