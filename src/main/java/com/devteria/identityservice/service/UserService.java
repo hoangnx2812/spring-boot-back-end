@@ -32,7 +32,7 @@ public class UserService {
 
     public void createUser(UserCreateReq userCreateRequest) {
         if (userRepository.existsByUsername(userCreateRequest.getUsername())) {
-            throw new AppException(ErrorCode.USER_EXISTS);
+            throw new AppException(ErrorCode.USER_NAME_EXISTS);
         }
         User user = userMapper.addUser(userCreateRequest);
         user.setPassword(passwordEncoder.encode(userCreateRequest.getPassword()));

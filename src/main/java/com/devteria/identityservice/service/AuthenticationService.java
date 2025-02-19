@@ -36,7 +36,7 @@ public class AuthenticationService {
 
     @NonFinal
     @Value("${jwt.signerKey}")
-    protected String SIGNER_KEY;
+    String SIGNER_KEY;
 
     UserRepository userRepository;
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
