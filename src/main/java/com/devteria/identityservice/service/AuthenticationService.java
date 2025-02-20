@@ -38,7 +38,7 @@ public class AuthenticationService {
 
     @NonFinal
     @Value("${jwt.signerKey}")
-    String SIGNER_KEY;
+    private String jwtSecret;
 
     UserRepository userRepository;
     PasswordEncoder passwordEncoder;
@@ -59,7 +59,7 @@ public class AuthenticationService {
     // Kiểm tra xem token còn hiệu lực không
     public IntrospectResponse introspect(IntrospectReq introspectReq) throws JOSEException, ParseException {
         var token = introspectReq.getToken();
-        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes()); // tạo verifier
+        JWSVerifier verifier = new MACVerifier(jwtSecret.getBytes()); // tạo verifier
         SignedJWT signedJWT = SignedJWT.parse(token); // parse token
         var verified = signedJWT.verify(verifier); // kiểm tra token
         Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime(); // lấy thời gian hết hạn
@@ -79,18 +79,22 @@ public class AuthenticationService {
         Payload payload = new Payload(jwtClaimsSet.toJSONObject()); // tạo payload thông qua dữ liệu của claims
         JWSObject jwsObject = new JWSObject(jwsHeader, payload); // tạo token
         try {
-            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes())); // ký token
+            jwsObject.sign(new MACSigner(jwtSecret.getBytes())); // ký token
             return jwsObject.serialize(); // trả về token
         } catch (JOSEException e) {
             log.error("Error signing token", e);
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
     private String buildScope(User user) {
         StringJoiner joiner = new StringJoiner(" ");
         if (!CollectionUtils.isEmpty(user.getRoles())) {
-            user.getRoles().forEach(joiner::add);
+            user.getRoles().forEach(role -> {
+                joiner.add(role.getName());
+                if (!CollectionUtils.isEmpty(role.getPermissions()))
+                    role.getPermissions().forEach(permission -> joiner.add(permission.getName()));
+            });
         }
         return joiner.toString();
     }

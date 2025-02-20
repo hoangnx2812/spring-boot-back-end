@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -13,7 +14,6 @@ import java.time.LocalDate;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserCreateReq {
-
 
     @Size(min = 4, message = "User name must be at least 4 characters")
     String username;
@@ -28,4 +28,6 @@ public class UserCreateReq {
     String lastName;
 
     LocalDate dateOfBirth;
+
+    Set<String> roles;
 }

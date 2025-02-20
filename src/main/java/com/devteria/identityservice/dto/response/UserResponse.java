@@ -1,6 +1,7 @@
 package com.devteria.identityservice.dto.response;
 
 
+import com.devteria.identityservice.entity.Role;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -13,9 +14,10 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserResponse {
+    String id;
     String username;
     String firstName;
     String lastName;
     String dateOfBirth;
-    Set<String> roles;
+    Set<Role> roles;
 }

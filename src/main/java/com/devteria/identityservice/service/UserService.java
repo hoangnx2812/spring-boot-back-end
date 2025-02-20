@@ -1,6 +1,6 @@
 package com.devteria.identityservice.service;
 
-import com.devteria.identityservice.constant.Role;
+
 import com.devteria.identityservice.dto.request.UserCreateReq;
 import com.devteria.identityservice.dto.request.UserUpdateReq;
 import com.devteria.identityservice.dto.response.UserResponse;
@@ -8,8 +8,8 @@ import com.devteria.identityservice.entity.User;
 import com.devteria.identityservice.exception.AppException;
 import com.devteria.identityservice.exception.ErrorCode;
 import com.devteria.identityservice.mapper.UserMapper;
+import com.devteria.identityservice.repository.RoleRepository;
 import com.devteria.identityservice.repository.UserRepository;
-import com.nimbusds.jose.proc.SecurityContext;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -21,8 +21,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -33,19 +33,23 @@ public class UserService {
     UserRepository userRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
+    RoleRepository roleRepository;
 
-    public List<User> getAll() {
-        return userRepository.findAll();
+    public List<UserResponse> getAll() {
+        return userRepository.findAll().stream()
+                .map(userMapper::userToUserResponse)
+                .toList();
     }
 
-    public void createUser(UserCreateReq userCreateRequest) {
+    public User createUser(UserCreateReq userCreateRequest) {
         if (userRepository.existsByUsername(userCreateRequest.getUsername())) {
             throw new AppException(ErrorCode.USER_NAME_EXISTS);
         }
         User user = userMapper.addUser(userCreateRequest);
+        var roles = roleRepository.findAllById(userCreateRequest.getRoles());
         user.setPassword(passwordEncoder.encode(userCreateRequest.getPassword()));
-        user.setRoles(Set.of(Role.USER.name()));
-        userRepository.save(user);
+        user.setRoles(new HashSet<>(roles));
+        return userRepository.save(user);
     }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -53,10 +57,13 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public void updateUser(UserUpdateReq userUpdateRequest) {
+    public UserResponse updateUser(UserUpdateReq userUpdateRequest) {
+        var roles = roleRepository.findAllById(userUpdateRequest.getRoles());
         User user = findById(userUpdateRequest.getId());
         userMapper.updateUser(user, userUpdateRequest);
+        user.setRoles(new HashSet<>(roles));
         userRepository.save(user);
+        return userMapper.userToUserResponse(user);
     }
 
     public User findById(String id) {
@@ -65,7 +72,6 @@ public class UserService {
     }
 
     //Nếu kết quả trả về thỏa mã điều kiện thì hàm này mới đc thực thi,
-    // nhân viên A chỉ xem đc thông tin của chính mình
     //=> Quyền truy cập phụ thuộc kết quả trả về
     @PostAuthorize("returnObject.username == authentication.name")
     public UserResponse findByIdResponse(String id) {

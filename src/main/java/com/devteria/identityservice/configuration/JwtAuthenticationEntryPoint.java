@@ -3,7 +3,6 @@ package com.devteria.identityservice.configuration;
 import com.devteria.identityservice.dto.response.ApiResponse;
 import com.devteria.identityservice.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -17,7 +16,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
-            throws IOException, ServletException {
+            throws IOException {
         ErrorCode errorCode = ErrorCode.UNAUTHENTICATED;
         ApiResponse<?> apiResponse = ApiResponse.builder()
                 .code(errorCode.getCode())

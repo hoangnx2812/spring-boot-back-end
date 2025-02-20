@@ -36,6 +36,7 @@ public class User {
     @Column(name = "last_name")
     String lastName;
 
-    Set<String> roles;
+    @ManyToMany(fetch = FetchType.EAGER)
+    Set<Role> roles;
 
 }
