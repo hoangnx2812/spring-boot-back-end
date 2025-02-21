@@ -46,7 +46,7 @@ public class ApplicationInitConfig {
                         .roles(role)
                         .build();
                 userRepository.save(admin);
-                log.warn("Admin user has been created with default username and password: admin");
+                log.warn("Admin user has been created with default username and password: admin, {}", password);
             }
         };
     }

@@ -41,6 +41,7 @@ public class UserService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyAuthority('CREATE_DATA', 'ROLE_ADMIN')")
     public User createUser(UserCreateReq userCreateRequest) {
         if (userRepository.existsByUsername(userCreateRequest.getUsername())) {
             throw new AppException(ErrorCode.USER_NAME_EXISTS);
@@ -52,11 +53,12 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'DELETE_DATA')")
     public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
 
+    @PreAuthorize("hasAuthority('UPDATE_DATA')")
     public UserResponse updateUser(UserUpdateReq userUpdateRequest) {
         var roles = roleRepository.findAllById(userUpdateRequest.getRoles());
         User user = findById(userUpdateRequest.getId());
@@ -78,7 +80,7 @@ public class UserService {
         return userMapper.userToUserResponse(findById(id));
     }
 
-
+    @PostAuthorize("returnObject.username == authentication.name")
     public UserResponse getInfo() {
         var context = SecurityContextHolder.getContext();
         String userName = context.getAuthentication().getName(); // lấy theo sub(sub sẽ lưu theo dữ liệu unique từ user)  từ token
