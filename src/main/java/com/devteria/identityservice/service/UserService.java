@@ -58,7 +58,7 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    @PreAuthorize("hasAuthority('UPDATE_DATA')")
+    @PreAuthorize("hasAuthority('UPDATE_DATA', 'ROLE_ADMIN')")
     public UserResponse updateUser(UserUpdateReq userUpdateRequest) {
         var roles = roleRepository.findAllById(userUpdateRequest.getRoles());
         User user = findById(userUpdateRequest.getId());
