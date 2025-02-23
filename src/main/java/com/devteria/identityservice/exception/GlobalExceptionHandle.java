@@ -2,6 +2,7 @@ package com.devteria.identityservice.exception;
 
 import com.devteria.identityservice.dto.response.ApiResponse;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandle {
 
@@ -41,9 +43,10 @@ public class GlobalExceptionHandle {
                 .build());
     }
 
-    //    Bắt lỗi chưa xác định
+//        Bắt lỗi chưa xác định
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<Object>> handleRuntimeException() {
+    public ResponseEntity<ApiResponse<Object>> handleRuntimeException(RuntimeException ex) {
+        log.error("An error occurred", ex);
         return ResponseEntity.badRequest().body(ApiResponse.builder()
                 .code(ErrorCode.UNCATEGORIZED.getCode())
                 .message(ErrorCode.UNCATEGORIZED.getMessage())
