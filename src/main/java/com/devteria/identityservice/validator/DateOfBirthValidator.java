@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintValidatorContext;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 public class DateOfBirthValidator implements ConstraintValidator<DateOfBirthConstraint, LocalDate> {
 
@@ -18,7 +19,7 @@ public class DateOfBirthValidator implements ConstraintValidator<DateOfBirthCons
 
     @Override
     public boolean isValid(LocalDate value, ConstraintValidatorContext context) {
-        if (value == null) {
+        if (Objects.isNull(value)) {
             return true;
         }
         long year = ChronoUnit.YEARS.between(value, LocalDate.now());
