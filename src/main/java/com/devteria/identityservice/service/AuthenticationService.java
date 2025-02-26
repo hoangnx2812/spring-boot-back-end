@@ -2,11 +2,14 @@ package com.devteria.identityservice.service;
 
 import com.devteria.identityservice.dto.request.AuthenticationReq;
 import com.devteria.identityservice.dto.request.IntrospectReq;
+import com.devteria.identityservice.dto.request.LogoutReq;
 import com.devteria.identityservice.dto.response.AuthenticationResponse;
 import com.devteria.identityservice.dto.response.IntrospectResponse;
+import com.devteria.identityservice.entity.InvalidatedToken;
 import com.devteria.identityservice.entity.User;
 import com.devteria.identityservice.exception.AppException;
 import com.devteria.identityservice.exception.ErrorCode;
+import com.devteria.identityservice.repository.InvalidatedTokenRepository;
 import com.devteria.identityservice.repository.UserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -19,6 +22,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -36,14 +40,14 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationService {
 
+    UserRepository userRepository;
+    InvalidatedTokenRepository invalidatedTokenRepository;
     @NonFinal
     @Value("${jwt.signerKey}")
     private String jwtSecret;
 
-    UserRepository userRepository;
-    PasswordEncoder passwordEncoder;
-
     public AuthenticationResponse authenticate(AuthenticationReq authenticationReq) {
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         var user = userRepository.findByUsername(authenticationReq.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
         boolean authenticated = passwordEncoder.matches(authenticationReq.getPassword(), user.getPassword());
@@ -58,12 +62,13 @@ public class AuthenticationService {
 
     // Kiểm tra xem token còn hiệu lực không
     public IntrospectResponse introspect(IntrospectReq introspectReq) throws JOSEException, ParseException {
-        var token = introspectReq.getToken();
-        JWSVerifier verifier = new MACVerifier(jwtSecret.getBytes()); // tạo verifier
-        SignedJWT signedJWT = SignedJWT.parse(token); // parse token
-        var verified = signedJWT.verify(verifier); // kiểm tra token
-        Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime(); // lấy thời gian hết hạn
-        return IntrospectResponse.builder().valid(verified && expirationTime.after(new Date())).build();
+        boolean isValid = true;
+        try {
+            verifyToken(introspectReq.getToken());
+        } catch (AppException e) {
+            isValid = false;
+        }
+        return IntrospectResponse.builder().valid(isValid).build();
     }
 
     private String generateToken(User user) {
@@ -86,6 +91,31 @@ public class AuthenticationService {
             throw new IllegalArgumentException(e);
         }
     }
+
+    public void logout(LogoutReq logoutReq) throws ParseException, JOSEException {
+        var signToken = verifyToken(logoutReq.getToken());
+        String jit = signToken.getJWTClaimsSet().getJWTID();
+        Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                .id(jit)
+                .expiryTime(expiryTime)
+                .build();
+        invalidatedTokenRepository.save(invalidatedToken);
+    }
+
+
+    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+        JWSVerifier verifier = new MACVerifier(jwtSecret.getBytes()); // tạo verifier
+        SignedJWT signedJWT = SignedJWT.parse(token); // parse token
+        var verified = signedJWT.verify(verifier); // kiểm tra token
+        Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime(); // lấy thời gian hết hạn
+        if (!verified || expirationTime.before(new Date()))
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        return signedJWT;
+    }
+
 
     private String buildScope(User user) {
         StringJoiner joiner = new StringJoiner(" ");

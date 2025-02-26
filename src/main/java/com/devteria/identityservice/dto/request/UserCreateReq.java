@@ -18,7 +18,7 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserCreateReq {
 
-    @Size(min = 4, message = "User name must be at least {min} characters")
+    @Size(min = 2, message = "User name must be at least {min} characters")
     String username;
 
     @Size(min = 6, message = "Password must be at least {min} characters")

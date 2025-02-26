@@ -1,11 +1,11 @@
 package com.devteria.identityservice.exception;
 
 import com.devteria.identityservice.dto.response.ApiResponse;
-
 import jakarta.validation.ConstraintViolation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,6 +16,7 @@ import java.util.Objects;
 
 @Slf4j
 @ControllerAdvice
+
 public class GlobalExceptionHandle {
 
     private static final String MIN_ATTRIBUTE = "min";
@@ -34,9 +35,9 @@ public class GlobalExceptionHandle {
             log.info(attributes.toString());
 
         } catch (IllegalArgumentException e) {
-
+            log.error("Invalid error code: {}", enumKey);
         }
-        ApiResponse apiResponse = new ApiResponse();
+        ApiResponse<Object> apiResponse = new ApiResponse<>();
         apiResponse.setCode(errorCode.getCode());
         apiResponse.setMessage(
                 Objects.nonNull(attributes)
@@ -78,4 +79,14 @@ public class GlobalExceptionHandle {
                 .message(ErrorCode.UNCATEGORIZED.getMessage())
                 .build());
     }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleHttpRequestMethodNotSupportedException() {
+        ErrorCode errorCode = ErrorCode.METHOD_NOT_ALLOWED;
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(ApiResponse.builder()
+                .code(errorCode.getCode())
+                .message(errorCode.getMessage())
+                .build());
+    }
 }
+

@@ -16,6 +16,7 @@ public enum ErrorCode {
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
     INVALID_DOB(1001, "Your age must be ai least {min}", HttpStatus.BAD_REQUEST),
+    METHOD_NOT_ALLOWED(1001, "Method not allowed", HttpStatus.METHOD_NOT_ALLOWED),
     ;
 
     private final int code;
