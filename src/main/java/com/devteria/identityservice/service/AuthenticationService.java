@@ -3,6 +3,7 @@ package com.devteria.identityservice.service;
 import com.devteria.identityservice.dto.request.AuthenticationReq;
 import com.devteria.identityservice.dto.request.IntrospectReq;
 import com.devteria.identityservice.dto.request.LogoutReq;
+import com.devteria.identityservice.dto.request.RefreshTokenReq;
 import com.devteria.identityservice.dto.response.AuthenticationResponse;
 import com.devteria.identityservice.dto.response.IntrospectResponse;
 import com.devteria.identityservice.entity.InvalidatedToken;
@@ -71,6 +72,41 @@ public class AuthenticationService {
         return IntrospectResponse.builder().valid(isValid).build();
     }
 
+    public String logout(LogoutReq logoutReq) throws ParseException, JOSEException {
+        var signToken = verifyToken(logoutReq.getToken());
+        String jit = signToken.getJWTClaimsSet().getJWTID();
+        Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                .id(jit)
+                .expiryTime(expiryTime)
+                .build();
+        invalidatedTokenRepository.save(invalidatedToken);
+        return signToken.getJWTClaimsSet().getSubject();
+    }
+
+    public AuthenticationResponse refreshToken(RefreshTokenReq request) throws ParseException, JOSEException {
+        var userName = logout(LogoutReq.builder().token(request.getToken()).build());
+        var user = userRepository.findByUsername(userName)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        generateToken(user);
+        return AuthenticationResponse.builder()
+                .token(generateToken(user))
+                .build();
+    }
+
+
+    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+        JWSVerifier verifier = new MACVerifier(jwtSecret.getBytes()); // tạo verifier
+        SignedJWT signedJWT = SignedJWT.parse(token); // parse token
+        var verified = signedJWT.verify(verifier); // kiểm tra token
+        Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime(); // lấy thời gian hết hạn
+        if (!verified || expirationTime.before(new Date()))
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        return signedJWT;
+    }
+
     private String generateToken(User user) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512); // tạo header, chứa thuật toán
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder() // tạo claims, nội dung
@@ -91,31 +127,6 @@ public class AuthenticationService {
             throw new IllegalArgumentException(e);
         }
     }
-
-    public void logout(LogoutReq logoutReq) throws ParseException, JOSEException {
-        var signToken = verifyToken(logoutReq.getToken());
-        String jit = signToken.getJWTClaimsSet().getJWTID();
-        Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
-        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
-                .id(jit)
-                .expiryTime(expiryTime)
-                .build();
-        invalidatedTokenRepository.save(invalidatedToken);
-    }
-
-
-    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
-        JWSVerifier verifier = new MACVerifier(jwtSecret.getBytes()); // tạo verifier
-        SignedJWT signedJWT = SignedJWT.parse(token); // parse token
-        var verified = signedJWT.verify(verifier); // kiểm tra token
-        Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime(); // lấy thời gian hết hạn
-        if (!verified || expirationTime.before(new Date()))
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        return signedJWT;
-    }
-
 
     private String buildScope(User user) {
         StringJoiner joiner = new StringJoiner(" ");

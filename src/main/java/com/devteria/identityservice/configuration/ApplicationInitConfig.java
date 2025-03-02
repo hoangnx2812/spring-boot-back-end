@@ -2,6 +2,7 @@ package com.devteria.identityservice.configuration;
 
 import com.devteria.identityservice.entity.Role;
 import com.devteria.identityservice.entity.User;
+import com.devteria.identityservice.repository.InvalidatedTokenRepository;
 import com.devteria.identityservice.repository.RoleRepository;
 import com.devteria.identityservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class ApplicationInitConfig {
 
     PasswordEncoder passwordEncoder;
     RoleRepository roleRepository;
+    InvalidatedTokenRepository invalidatedTokenRepository;
 
     @NonFinal
     @Value("${admin.password}")
@@ -48,6 +50,7 @@ public class ApplicationInitConfig {
                 userRepository.save(admin);
                 log.warn("Admin user has been created with default username and password: admin, {}", password);
             }
+            invalidatedTokenRepository.deleteByExpiryTimeAfterNow();
         };
     }
 }

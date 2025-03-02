@@ -22,3 +22,18 @@ jwt:
 
 admin:
   password: admin
+
+logging:
+  level:
+    root: info
+    org:
+      springframework:
+        security: info
+        web: info
+      hibernate: info
+      org.hibernate.SQL: debug
+      org.hibernate.type: trace
+
+  file:
+    name: logs/identity_service.log
+

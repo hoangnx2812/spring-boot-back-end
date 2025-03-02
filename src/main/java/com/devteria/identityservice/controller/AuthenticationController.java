@@ -3,6 +3,7 @@ package com.devteria.identityservice.controller;
 import com.devteria.identityservice.dto.request.AuthenticationReq;
 import com.devteria.identityservice.dto.request.IntrospectReq;
 import com.devteria.identityservice.dto.request.LogoutReq;
+import com.devteria.identityservice.dto.request.RefreshTokenReq;
 import com.devteria.identityservice.dto.response.ApiResponse;
 import com.devteria.identityservice.dto.response.AuthenticationResponse;
 import com.devteria.identityservice.dto.response.IntrospectResponse;
@@ -12,7 +13,10 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.text.ParseException;
 
@@ -53,6 +57,15 @@ public class AuthenticationController {
                 .build();
     }
 
+
+    @PostMapping("/refresh")
+    public ApiResponse<AuthenticationResponse> refresh(@RequestBody RefreshTokenReq refreshTokenReq) throws ParseException, JOSEException {
+        return ApiResponse.<AuthenticationResponse>builder()
+                .code(200)
+                .message("Refresh successful")
+                .data(authenticationService.refreshToken(refreshTokenReq))
+                .build();
+    }
 
 
 }
