@@ -19,6 +19,8 @@ spring:
 
 jwt:
   signerKey: "1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij"
+  valid-duration: 60 # seconds
+  refreshable-duration: 120 # seconds
 
 admin:
   password: admin
@@ -27,13 +29,9 @@ logging:
   level:
     root: info
     org:
-      springframework:
-        security: info
-        web: info
       hibernate: info
-      org.hibernate.SQL: debug
+      org.hibernate.SQL: trace
       org.hibernate.type: trace
-
   file:
     name: logs/identity_service.log
 

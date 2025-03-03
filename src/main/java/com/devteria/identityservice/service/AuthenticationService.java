@@ -43,9 +43,18 @@ public class AuthenticationService {
 
     UserRepository userRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
+
     @NonFinal
     @Value("${jwt.signerKey}")
-    private String jwtSecret;
+    String jwtSecret;
+
+    @NonFinal
+    @Value("${jwt.valid-duration}")
+    Long validDuration;
+
+    @NonFinal
+    @Value("${jwt.refreshable-duration}")
+    Long refreshDuration;
 
     public AuthenticationResponse authenticate(AuthenticationReq authenticationReq) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
@@ -65,15 +74,30 @@ public class AuthenticationService {
     public IntrospectResponse introspect(IntrospectReq introspectReq) throws JOSEException, ParseException {
         boolean isValid = true;
         try {
-            verifyToken(introspectReq.getToken());
+            verifyToken(introspectReq.getToken(), false);
         } catch (AppException e) {
             isValid = false;
         }
         return IntrospectResponse.builder().valid(isValid).build();
     }
 
-    public String logout(LogoutReq logoutReq) throws ParseException, JOSEException {
-        var signToken = verifyToken(logoutReq.getToken());
+    public void logout(LogoutReq logoutReq) throws ParseException, JOSEException {
+        try {
+            SignedJWT signToken = verifyToken(logoutReq.getToken(), true);
+            String jit = signToken.getJWTClaimsSet().getJWTID();
+            Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+            InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                    .id(jit)
+                    .expiryTime(expiryTime)
+                    .build();
+            invalidatedTokenRepository.save(invalidatedToken);
+        } catch (AppException e) {
+            log.info(e.getMessage());
+        }
+    }
+
+    public AuthenticationResponse refreshToken(RefreshTokenReq request) throws ParseException, JOSEException {
+        var signToken = verifyToken(request.getToken(), true);
         String jit = signToken.getJWTClaimsSet().getJWTID();
         Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
         InvalidatedToken invalidatedToken = InvalidatedToken.builder()
@@ -81,11 +105,7 @@ public class AuthenticationService {
                 .expiryTime(expiryTime)
                 .build();
         invalidatedTokenRepository.save(invalidatedToken);
-        return signToken.getJWTClaimsSet().getSubject();
-    }
-
-    public AuthenticationResponse refreshToken(RefreshTokenReq request) throws ParseException, JOSEException {
-        var userName = logout(LogoutReq.builder().token(request.getToken()).build());
+        var userName = signToken.getJWTClaimsSet().getSubject();
         var user = userRepository.findByUsername(userName)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         generateToken(user);
@@ -95,11 +115,13 @@ public class AuthenticationService {
     }
 
 
-    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+    private SignedJWT verifyToken(String token, boolean isRefresh) throws JOSEException, ParseException {
         JWSVerifier verifier = new MACVerifier(jwtSecret.getBytes()); // tạo verifier
         SignedJWT signedJWT = SignedJWT.parse(token); // parse token
+        Date expirationTime = isRefresh
+                ? Date.from(signedJWT.getJWTClaimsSet().getIssueTime().toInstant().plus(refreshDuration, ChronoUnit.SECONDS))
+                : signedJWT.getJWTClaimsSet().getExpirationTime();
         var verified = signedJWT.verify(verifier); // kiểm tra token
-        Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime(); // lấy thời gian hết hạn
         if (!verified || expirationTime.before(new Date()))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
@@ -113,7 +135,7 @@ public class AuthenticationService {
                 .subject(user.getUsername())
                 .issuer("hoangnx2812") // được phát hành từ ai
                 .issueTime(new Date()) // thời gian phát hành
-                .expirationTime(new Date(Instant.now().plus(1, ChronoUnit.DAYS).toEpochMilli())) // thời gian hết hạn
+                .expirationTime(new Date(Instant.now().plus(validDuration, ChronoUnit.SECONDS).toEpochMilli())) // thời gian hết hạn
                 .jwtID(UUID.randomUUID().toString()) // id của token
                 .claim("scope", buildScope(user)) // thêm claim
                 .build();
