@@ -1,0 +1,48 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    networks:
+      - monitoring
+    container_name: prometheus
+    restart: unless-stopped # Tự động khởi động lại container trừ khi bị dừng thủ công.
+    volumes:
+      - ./data/prometheus/config:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+    ports:
+      - 9090:9090
+
+
+
+#  node-exporter:
+#    image: prom/node-exporter
+#    network_mode: host
+#    container_name: node-exporter
+#    restart: unless-stopped
+#    expose:
+#      - 9100
+
+  grafana:
+    image: grafana/grafana
+    pull_policy: always
+    container_name: grafana
+    restart: unless-stopped
+    networks:
+      - monitoring
+    user: root
+    ports:
+      - 3001:3000
+#    links:
+#      - prometheus:prometheus
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USER_ALLOW_SIGN_UP=false
+      - GF_SERVER_DOMAIN=localhost
+      - GF_LOG_MOD=console file
+      - GF_LOG_FILTERS=alerting.notifier.slack:debug alertmanager:debug ngalert:debug
+
+networks:
+  monitoring:
+    driver: bridge

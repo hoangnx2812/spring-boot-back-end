@@ -1,0 +1,17 @@
+scrape_configs:
+#  - job_name: 'prometheus'
+#    scrape_interval: 5s  # Lấy dữ liệu mỗi 5 giây
+#    static_configs:
+#      #Cấu hình các target cần scrape dữ liệu
+#      - targets: [ 'localhost:9090', 'localhost:8081', 'localhost:9100', 'localhost:9113', 'localhost:2003' ]
+
+  - job_name: 'Spring Boot Application input'
+    metrics_path: '/actuator/prometheus' # Đường dẫn để lấy dữ liệu metrics của Spring Boot
+    scrape_interval: 2s  # Lấy dữ liệu mỗi 2 giây
+    static_configs:
+      - targets: [ 'host.docker.internal:8081']
+        labels:
+          application: 'My Spring Boot Application'
+
+global:
+  scrape_interval: 5s
